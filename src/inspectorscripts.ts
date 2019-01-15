@@ -65,15 +65,17 @@ def _jupyterlab_variableinspector_getsizeof(x):
 
 
 def _jupyterlab_variableinspector_getshapeof(x):
+    if isinstance(x, list):
+        return "List [%s]" % len(x)
     if pd and isinstance(x, pd.DataFrame):
-        return "DataFrame [%d rows x %d cols]" % x.shape
+        return "DataFrame [%d Rows x %d Cols]" % x.shape
     if pd and isinstance(x, pd.Series):
-        return "Series [%d rows]" % x.shape
+        return "Series [%d Rows]" % x.shape
     if np and isinstance(x, np.ndarray):
         shape = " x ".join([str(i) for i in x.shape])
         return "Array [%s]" %  shape
     if pyspark and isinstance(x, pyspark.sql.DataFrame):
-        return "Spark DataFrame [? rows x %d cols]" % len(x.columns)
+        return "Spark DataFrame [? Rows x %d Cols]" % len(x.columns)
     if tf and isinstance(x, tf.Variable):
         shape = " x ".join([str(int(i)) for i in x.shape])
         return "Tensorflow Variable [%s]" % shape
@@ -81,8 +83,8 @@ def _jupyterlab_variableinspector_getshapeof(x):
         shape = " x ".join([str(int(i)) for i in x.shape])
         return "Tensorflow Tensor [%s]" % shape
     if torch and isinstance(x, torch.Tensor):
-      shape = " x ".join([str(int(i)) for i in x.shape])
-      return "Torch Tensor [%s]" % shape
+        shape = " x ".join([str(int(i)) for i in x.shape])
+        return "Torch Tensor [%s]" % shape
     return None
 
 
@@ -147,7 +149,7 @@ def _jupyterlab_variableinspector_dict_list():
             return False
     values = _jupyterlab_variableinspector_nms.who_ls()
     vardic = [{'varName': _v,
-    'varType': type(eval(_v)).__name__,
+    'varType': str(type(eval(_v)).__name__).capitalize(),
     'varSize': str(_jupyterlab_variableinspector_getsizeof(eval(_v))),
     'varShape': str(_jupyterlab_variableinspector_getshapeof(eval(_v))) if _jupyterlab_variableinspector_getshapeof(eval(_v)) else '',
     'varContent': str(_jupyterlab_variableinspector_getcontentof(eval(_v))),
