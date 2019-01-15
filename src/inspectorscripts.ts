@@ -103,6 +103,14 @@ def _jupyterlab_variableinspector_getshapeof(x):
 def _jupyterlab_variableinspector_getcontentof(x):
     # returns content in a friendly way for python variables
     # pandas and numpy
+    maxoutput = 100
+    if isinstance(x, list):
+        truncate = 1
+        content = str(dictlist[:truncate])
+        while len(content) < maxoutput:
+          truncate += 1
+          content = str(dictlist[:truncate])
+        content = str(dictlist[:truncate-1] + ['...'])
     if pd and isinstance(x, pd.DataFrame):
         colnames = ', '.join(x.columns.map(str))
         content = "Column Names: %s" % colnames
@@ -112,8 +120,8 @@ def _jupyterlab_variableinspector_getcontentof(x):
         content = x.__repr__()
     else:
         content = str(x)
-    if len(content) > 150:
-        return content[:150] + " ..."
+    if len(content) > maxoutput:
+        return content[:maxoutput] + " ..."
     else:
         return content
 
