@@ -208,7 +208,7 @@ namespace Private {
         let cell2 = hrow.insertCell( 1 );
         cell2.innerHTML = "Type";
         let cell4 = hrow.insertCell( 2 );
-        cell4.innerHTML = "Shape";
+        cell4.innerHTML = "Shape / Dimensions";
         let cell5 = hrow.insertCell( 3 );
         cell5.innerHTML = "Content";
         return table;
