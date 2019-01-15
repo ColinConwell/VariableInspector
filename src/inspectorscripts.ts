@@ -45,6 +45,11 @@ try:
 except ImportError:
     tf = None
 
+try:
+    import torch
+except ImportError:
+    torch = None
+
 
 def _jupyterlab_variableinspector_getsizeof(x):
     if type(x).__name__ in ['ndarray', 'Series']:
@@ -75,6 +80,9 @@ def _jupyterlab_variableinspector_getshapeof(x):
     if tf and isinstance(x, tf.Tensor):
         shape = " x ".join([str(int(i)) for i in x.shape])
         return "Tensorflow Tensor [%s]" % shape
+    if torch and isinstance(x, torch.Tensor):
+      shape = " x ".join([str(int(i)) for i in x.shape])
+      return "Torch Tensor [%s]" % shape
     return None
 
 
@@ -136,18 +144,18 @@ def _jupyterlab_variableinspector_dict_list():
         except:
             return False
     values = _jupyterlab_variableinspector_nms.who_ls()
-    vardic = [{'varName': _v, 
-    'varType': type(eval(_v)).__name__, 
-    'varSize': str(_jupyterlab_variableinspector_getsizeof(eval(_v))), 
-    'varShape': str(_jupyterlab_variableinspector_getshapeof(eval(_v))) if _jupyterlab_variableinspector_getshapeof(eval(_v)) else '', 
-    'varContent': str(_jupyterlab_variableinspector_getcontentof(eval(_v))), 
+    vardic = [{'varName': _v,
+    'varType': type(eval(_v)).__name__,
+    'varSize': str(_jupyterlab_variableinspector_getsizeof(eval(_v))),
+    'varShape': str(_jupyterlab_variableinspector_getshapeof(eval(_v))) if _jupyterlab_variableinspector_getshapeof(eval(_v)) else '',
+    'varContent': str(_jupyterlab_variableinspector_getcontentof(eval(_v))),
     'isMatrix': _jupyterlab_variableinspector_is_matrix(eval(_v))}
             for _v in values if keep_cond(_v)]
     return json.dumps(vardic, ensure_ascii=False)
 
 
 def _jupyterlab_variableinspector_getmatrixcontent(x, max_rows=10000):
-    
+
     # to do: add something to handle this in the future
     threshold = max_rows
 
@@ -170,10 +178,10 @@ def _jupyterlab_variableinspector_getmatrixcontent(x, max_rows=10000):
         return _jupyterlab_variableinspector_getmatrixcontent(df)
 
 def _jupyterlab_variableinspector_default(o):
-    if isinstance(o, np.number): return int(o)  
+    if isinstance(o, np.number): return int(o)
     raise TypeError
 `;
-    
+
     static scripts: { [index: string]: Languages.LanguageModel } = {
         "python3": {
             initScript: Languages.py_script,
@@ -204,6 +212,3 @@ def _jupyterlab_variableinspector_default(o):
     }
 
 }
-
-
-
