@@ -118,6 +118,8 @@ def _jupyterlab_variableinspector_is_matrix(x):
         return True
     if tf and isinstance(x, tf.Tensor) and len(x.shape) <= 2:
         return True
+    if torch and isinstance(x, torch.Tensor) and len(x.shape) <= 2:
+        return True
     return False
 
 
