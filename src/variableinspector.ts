@@ -54,7 +54,7 @@ namespace IVariableInspector {
         interface IVariableInspectorUpdate {
         title: IVariableTitle;
         payload: Array<IVariable>;
-    } 
+    }
 
     export
         interface IVariable {
@@ -135,13 +135,13 @@ export
 
         let title = allArgs.title;
         let args = allArgs.payload;
-        
+
         if (title.contextName){
-            this._title.innerHTML = title.contextName;            
+            this._title.innerHTML = title.contextName;
         }else{
             this._title.innerHTML = "    Inspecting " + title.languageName + "-kernel '"+title.kernelName + "' "+title.contextName;
         }
-        
+
         //Render new variable state
         let row: HTMLTableRowElement;
         this._table.deleteTFoot();
@@ -162,10 +162,8 @@ export
             cell = row.insertCell( 1 );
             cell.innerHTML = args[index].varType;
             cell = row.insertCell( 2 );
-            cell.innerHTML = args[index].varSize;
-            cell = row.insertCell( 3 );
             cell.innerHTML = args[index].varShape;
-            cell = row.insertCell( 4 );
+            cell = row.insertCell( 3 );
             cell.innerHTML = args[index].varContent.replace(/\\n/g,  "</br>");
         }
     }

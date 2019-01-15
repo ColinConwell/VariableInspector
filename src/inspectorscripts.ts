@@ -50,6 +50,18 @@ try:
 except ImportError:
     torch = None
 
+def _jupyterlab_variableinspector_gettypeof(x):
+  if tf and isinstance(x, tf.Variable):
+      return "Tensorflow Tensor"
+  if tf and isinstance(x, tf.Tensor):
+      return "Tensorflow Tensor"
+  if torch and isinstance(x, torch.Tensor):
+      return "Torch Tensor"
+  if str(type(x).__name__)[0].isupper() == True:
+      return str(type(x).__name__)
+  if str(type(x).__name__)[0].isupper() == False:
+      return str(type(x).__name__).capitalize()
+  return None
 
 def _jupyterlab_variableinspector_getsizeof(x):
     if type(x).__name__ in ['ndarray', 'Series']:
@@ -66,25 +78,25 @@ def _jupyterlab_variableinspector_getsizeof(x):
 
 def _jupyterlab_variableinspector_getshapeof(x):
     if isinstance(x, list):
-        return "List [%s]" % len(x)
+        return "[%s]" % len(x)
     if pd and isinstance(x, pd.DataFrame):
-        return "DataFrame [%d Rows x %d Cols]" % x.shape
+        return "[%d Rows x %d Cols]" % x.shape
     if pd and isinstance(x, pd.Series):
-        return "Series [%d Rows]" % x.shape
+        return "[%d Rows]" % x.shape
     if np and isinstance(x, np.ndarray):
         shape = " x ".join([str(i) for i in x.shape])
-        return "Array [%s]" %  shape
+        return "[%s]" %  shape
     if pyspark and isinstance(x, pyspark.sql.DataFrame):
-        return "Spark DataFrame [? Rows x %d Cols]" % len(x.columns)
+        return "[? Rows x %d Cols]" % len(x.columns)
     if tf and isinstance(x, tf.Variable):
         shape = " x ".join([str(int(i)) for i in x.shape])
-        return "Tensorflow Variable [%s]" % shape
+        return "[%s]" % shape
     if tf and isinstance(x, tf.Tensor):
         shape = " x ".join([str(int(i)) for i in x.shape])
-        return "Tensorflow Tensor [%s]" % shape
+        return "[%s]" % shape
     if torch and isinstance(x, torch.Tensor):
         shape = " x ".join([str(int(i)) for i in x.shape])
-        return "Torch Tensor [%s]" % shape
+        return "[%s]" % shape
     return None
 
 
@@ -149,7 +161,7 @@ def _jupyterlab_variableinspector_dict_list():
             return False
     values = _jupyterlab_variableinspector_nms.who_ls()
     vardic = [{'varName': _v,
-    'varType': str(type(eval(_v)).__name__).capitalize(),
+    'varType': str(_jupyterlab_variableinspector_gettypeof(eval(_v))),
     'varSize': str(_jupyterlab_variableinspector_getsizeof(eval(_v))),
     'varShape': str(_jupyterlab_variableinspector_getshapeof(eval(_v))) if _jupyterlab_variableinspector_getshapeof(eval(_v)) else '',
     'varContent': str(_jupyterlab_variableinspector_getcontentof(eval(_v))),
