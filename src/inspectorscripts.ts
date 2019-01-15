@@ -80,14 +80,14 @@ def _jupyterlab_variableinspector_getshapeof(x):
     if isinstance(x, list):
         return "[%s]" % len(x)
     if pd and isinstance(x, pd.DataFrame):
-        return "[%d Rows x %d Cols]" % x.shape
+        return "[%d x %d]" % x.shape
     if pd and isinstance(x, pd.Series):
-        return "[%d Rows]" % x.shape
+        return "[%d]" % x.shape
     if np and isinstance(x, np.ndarray):
         shape = " x ".join([str(i) for i in x.shape])
         return "[%s]" %  shape
     if pyspark and isinstance(x, pyspark.sql.DataFrame):
-        return "[? Rows x %d Cols]" % len(x.columns)
+        return "[? x %d]" % len(x.columns)
     if tf and isinstance(x, tf.Variable):
         shape = " x ".join([str(int(i)) for i in x.shape])
         return "[%s]" % shape
@@ -105,9 +105,9 @@ def _jupyterlab_variableinspector_getcontentof(x):
     # pandas and numpy
     if pd and isinstance(x, pd.DataFrame):
         colnames = ', '.join(x.columns.map(str))
-        content = "Column names: %s" % colnames
+        content = "Column Names: %s" % colnames
     elif pd and isinstance(x, pd.Series):
-        content = "Series [%d rows]" % x.shape
+        content = "Series [%d Rows]" % x.shape
     elif np and isinstance(x, np.ndarray):
         content = x.__repr__()
     else:
