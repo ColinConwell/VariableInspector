@@ -56,7 +56,10 @@ def _jupyterlab_variableinspector_gettypeof(x):
   if tf and isinstance(x, tf.Tensor):
       return "Tensorflow Tensor"
   if torch and isinstance(x, torch.Tensor):
-      return "Torch Tensor"
+      if x.is_cuda:
+        return 'Torch Tensor [Device {}: {}]'.format(x.get_device(), torch.cuda.get_device_name(x.get_device())))
+      else:
+        return 'Torch Tensor [Device: CPU]'
   if str(type(x).__name__)[0].isupper() == True:
       return str(type(x).__name__)
   if str(type(x).__name__)[0].isupper() == False:
@@ -106,11 +109,11 @@ def _jupyterlab_variableinspector_getcontentof(x):
     maxoutput = 100
     if isinstance(x, list):
         truncate = 1
-        content = str(dictlist[:truncate])
+        content = str(x[:truncate])
         while len(content) < maxoutput:
           truncate += 1
-          content = str(dictlist[:truncate])
-        content = str(dictlist[:truncate-1] + ['...'])
+          content = str(x[:truncate])
+        content = str(x[:truncate-1] + ['...'])
     if pd and isinstance(x, pd.DataFrame):
         colnames = ', '.join(x.columns.map(str))
         content = "Column Names: %s" % colnames
