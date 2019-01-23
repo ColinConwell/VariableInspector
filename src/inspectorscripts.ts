@@ -57,7 +57,7 @@ def _jupyterlab_variableinspector_gettypeof(x):
       return "Tensorflow Tensor"
   if torch and isinstance(x, torch.Tensor):
       if x.is_cuda:
-        return 'Torch Tensor [Device {}: {}]'.format(x.get_device(), torch.cuda.get_device_name(x.get_device())))
+        return 'Torch Tensor [Device {}: {}]'.format(x.get_device(), torch.cuda.get_device_name(x.get_device()))
       else:
         return 'Torch Tensor [Device: CPU]'
   if str(type(x).__name__)[0].isupper() == True:
