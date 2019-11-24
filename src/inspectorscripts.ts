@@ -5,6 +5,7 @@ namespace Languages {
             initScript: string;
             queryCommand: string;
             matrixQueryCommand: string;
+            deleteCommand: string;
         }
 }
 
@@ -50,21 +51,6 @@ try:
 except ImportError:
     torch = None
 
-def _jupyterlab_variableinspector_gettypeof(x):
-  if tf and isinstance(x, tf.Variable):
-      return "Tensorflow Tensor"
-  if tf and isinstance(x, tf.Tensor):
-      return "Tensorflow Tensor"
-  if torch and isinstance(x, torch.Tensor):
-      if x.is_cuda:
-        return 'Torch Tensor [Device {}: {}]'.format(x.get_device(), torch.cuda.get_device_name(x.get_device()))
-      else:
-        return 'Torch Tensor [Device: CPU]'
-  if str(type(x).__name__)[0].isupper() == True:
-      return str(type(x).__name__)
-  if str(type(x).__name__)[0].isupper() == False:
-      return str(type(x).__name__).capitalize()
-  return None
 
 def _jupyterlab_variableinspector_getsizeof(x):
     if type(x).__name__ in ['ndarray', 'Series']:
@@ -73,6 +59,8 @@ def _jupyterlab_variableinspector_getsizeof(x):
         return "?"
     elif tf and isinstance(x, tf.Variable):
         return "?"
+    elif torch and isinstance(x, torch.Tensor):
+        return "?"
     elif pd and type(x).__name__ == 'DataFrame':
         return x.memory_usage().sum()
     else:
@@ -80,53 +68,58 @@ def _jupyterlab_variableinspector_getsizeof(x):
 
 
 def _jupyterlab_variableinspector_getshapeof(x):
-    if isinstance(x, list):
-        return "[%s]" % len(x)
     if pd and isinstance(x, pd.DataFrame):
-        return "[%d x %d]" % x.shape
+        return "%d rows x %d cols" % x.shape
     if pd and isinstance(x, pd.Series):
-        return "[%d]" % x.shape
+        return "%d rows" % x.shape
     if np and isinstance(x, np.ndarray):
         shape = " x ".join([str(i) for i in x.shape])
-        return "[%s]" %  shape
+        return "%s" % shape
     if pyspark and isinstance(x, pyspark.sql.DataFrame):
-        return "[? x %d]" % len(x.columns)
+        return "? rows x %d cols" % len(x.columns)
     if tf and isinstance(x, tf.Variable):
         shape = " x ".join([str(int(i)) for i in x.shape])
-        return "[%s]" % shape
+        return "%s" % shape
     if tf and isinstance(x, tf.Tensor):
         shape = " x ".join([str(int(i)) for i in x.shape])
-        return "[%s]" % shape
+        return "%s" % shape
     if torch and isinstance(x, torch.Tensor):
         shape = " x ".join([str(int(i)) for i in x.shape])
         return "[%s]" % shape
+    if isinstance(x, list):
+        return "%s" % len(x)
+    if isinstance(x, dict):
+        return "%s keys" % len(x)
     return None
 
 
 def _jupyterlab_variableinspector_getcontentof(x):
     # returns content in a friendly way for python variables
     # pandas and numpy
-    maxoutput = 100
+    max_output = 100
     if isinstance(x, list):
         truncate = 1
         content = str(x[:truncate])
-        while len(content) < maxoutput:
+        while len(content) < max_output:
           truncate += 1
           content = str(x[:truncate])
         content = str(x[:truncate-1] + ['...'])
     if pd and isinstance(x, pd.DataFrame):
         colnames = ', '.join(x.columns.map(str))
-        content = "Column Names: %s" % colnames
+        content = "Columns: %s" % colnames
     elif pd and isinstance(x, pd.Series):
-        content = "Series [%d Rows]" % x.shape
+        content = str(x.values).replace(" ", ", ")[1:-1]
+        content = content.replace("\\n", "")
     elif np and isinstance(x, np.ndarray):
         content = x.__repr__()
     else:
         content = str(x)
-    if len(content) > maxoutput:
-        return content[:maxoutput] + " ..."
+
+    if len(content) > max_output:
+        return content[:max_output] + " ..."
     else:
         return content
+
 
 
 def _jupyterlab_variableinspector_is_matrix(x):
@@ -145,6 +138,8 @@ def _jupyterlab_variableinspector_is_matrix(x):
         return True
     if torch and isinstance(x, torch.Tensor) and len(x.shape) <= 2:
         return True
+    if isinstance(x, list):
+        return True
     return False
 
 
@@ -155,6 +150,8 @@ def _jupyterlab_variableinspector_dict_list():
             if isinstance(obj, str):
                 return True
             if tf and isinstance(obj, tf.Variable):
+                return True
+            if torch and isinstance(obj, torch.Tensor):
                 return True
             if pd and pd is not None and (
                 isinstance(obj, pd.core.frame.DataFrame)
@@ -171,59 +168,151 @@ def _jupyterlab_variableinspector_dict_list():
         except:
             return False
     values = _jupyterlab_variableinspector_nms.who_ls()
-    vardic = [{'varName': _v,
-    'varType': str(_jupyterlab_variableinspector_gettypeof(eval(_v))),
-    'varSize': str(_jupyterlab_variableinspector_getsizeof(eval(_v))),
-    'varShape': str(_jupyterlab_variableinspector_getshapeof(eval(_v))) if _jupyterlab_variableinspector_getshapeof(eval(_v)) else '',
-    'varContent': str(_jupyterlab_variableinspector_getcontentof(eval(_v))),
+    vardic = [{'varName': _v, 
+    'varType': type(eval(_v)).__name__, 
+    'varSize': str(_jupyterlab_variableinspector_getsizeof(eval(_v))), 
+    'varShape': str(_jupyterlab_variableinspector_getshapeof(eval(_v))) if _jupyterlab_variableinspector_getshapeof(eval(_v)) else '', 
+    'varContent': str(_jupyterlab_variableinspector_getcontentof(eval(_v))), 
     'isMatrix': _jupyterlab_variableinspector_is_matrix(eval(_v))}
             for _v in values if keep_cond(_v)]
     return json.dumps(vardic, ensure_ascii=False)
 
 
 def _jupyterlab_variableinspector_getmatrixcontent(x, max_rows=10000):
-
+    
     # to do: add something to handle this in the future
     threshold = max_rows
 
     if pd and pyspark and isinstance(x, pyspark.sql.DataFrame):
         df = x.limit(threshold).toPandas()
         return _jupyterlab_variableinspector_getmatrixcontent(df.copy())
-    elif np and pd and type(x).__name__ in ["Series", "DataFrame"]:
+    elif np and pd and type(x).__name__ == "DataFrame":
         if threshold is not None:
             x = x.head(threshold)
         x.columns = x.columns.map(str)
-        return x.to_json(orient="table", default_handler=_jupyterlab_variableinspector_default)
-    elif np and pd and type(x).__name__ in ["ndarray"]:
-        df = pd.DataFrame(x)
+        return x.to_json(orient="table", default_handler=_jupyterlab_variableinspector_default, force_ascii=False)
+    elif np and pd and type(x).__name__ == "Series":
         if threshold is not None:
-            df = df.head(threshold)
-        df.columns = df.columns.map(str)
-        return df.to_json(orient="table", default_handler=_jupyterlab_variableinspector_default)
-    elif tf and (isinstance(x, tf.Variable) or isinstance(x, tf.Tensor)):
-        df = K.get_value(x)
+            x = x.head(threshold)
+        return x.to_json(orient="table", default_handler=_jupyterlab_variableinspector_default, force_ascii=False)
+    elif np and pd and type(x).__name__ == "ndarray":
+        df = pd.DataFrame(x)
         return _jupyterlab_variableinspector_getmatrixcontent(df)
+    elif tf and (isinstance(x, tf.Variable) or isinstance(x, tf.Tensor)):
+        df = x.numpy()
+        return _jupyterlab_variableinspector_getmatrixcontent(df)
+    elif torch and (isinstance(x, torch.Tensor):
+        df = x.numpy()
+        return _jupyterlab_variableinspector_getmatrixcontent(df)
+    elif isinstance(x, list):
+        s = pd.Series(x)
+        return _jupyterlab_variableinspector_getmatrixcontent(s)
+
 
 def _jupyterlab_variableinspector_default(o):
-    if isinstance(o, np.number): return int(o)
+    if isinstance(o, np.number): return int(o)  
     raise TypeError
+
+
+def _jupyterlab_variableinspector_deletevariable(x):
+    exec("del %s" % x, globals())
 `;
 
+    static r_script: string = `library(repr)
+
+.ls.objects = function (pos = 1, pattern, order.by, decreasing = FALSE, head = FALSE, 
+    n = 5) 
+{
+    napply <- function(names, fn) sapply(names, function(x) fn(get(x, 
+        pos = pos)))
+    names <- ls(pos = pos, pattern = pattern)
+    if (length(names) == 0) {
+        return(jsonlite::toJSON(data.frame()))
+    }
+    obj.class <- napply(names, function(x) as.character(class(x))[1])
+    obj.mode <- napply(names, mode)
+    obj.type <- ifelse(is.na(obj.class), obj.mode, obj.class)
+    obj.size <- napply(names, object.size)
+    obj.dim <- t(napply(names, function(x) as.numeric(dim(x))[1:2]))
+    obj.content <- rep("NA", length(names))
+    has_no_dim <- is.na(obj.dim)[1:length(names)]                        
+    obj.dim[has_no_dim, 1] <- napply(names, length)[has_no_dim]
+    vec <- (obj.type != "function")
+    obj.content[vec] <- napply(names[vec], function(x) toString(x, width = 154)[1])
+                      
+    obj.rownames <- napply(names, rownames)
+    has_rownames <- obj.rownames != "NULL"
+    obj.rownames <- sapply(obj.rownames[has_rownames], function(x) paste(x,
+        collapse=", "))
+    obj.rownames.short <- sapply(obj.rownames, function(x) paste(substr(x, 1, 150), "...."))
+    obj.rownames <- ifelse(nchar(obj.rownames) > 154, obj.rownames.short, obj.rownames)
+    obj.rownames <- sapply(obj.rownames, function(x) paste("Row names: ",x))
+    obj.content[has_rownames] <- obj.rownames
+                               
+                               
+    obj.colnames <- napply(names, colnames)
+    has_colnames <- obj.colnames != "NULL"
+    obj.colnames <- sapply(obj.colnames[has_colnames], function(x) paste(x, 
+        collapse = ", "))
+    obj.colnames.short <- sapply(obj.colnames, function(x) paste(substr(x, 
+        1, 150), "...."))
+    obj.colnames <- ifelse(nchar(obj.colnames) > 154, obj.colnames.short, 
+        obj.colnames)
+    obj.colnames <- sapply(obj.colnames, function(x) paste("Column names: ",x))
+                    
+    obj.content[has_colnames] <- obj.colnames
+                           
+    is_function <- (obj.type == "function")
+    obj.content[is_function] <- napply(names[is_function], function(x) paste(strsplit(repr_text(x),")")[[1]][1],")",sep=""))
+    obj.content <- unlist(obj.content, use.names = FALSE)
+    
+
+    out <- data.frame(obj.type, obj.size, obj.dim)
+    names(out) <- c("varType", "varSize", "Rows", "Columns")
+    out$varShape <- paste(out$Rows, " x ", out$Columns)
+    out$varContent <- obj.content
+    out$isMatrix <- FALSE
+    out$varName <- row.names(out)
+    out <- out[, !(names(out) %in% c("Rows", "Columns"))]
+    rownames(out) <- NULL
+    print(out)
+    if (!missing(order.by)) 
+        out <- out[order(out[[order.by]], decreasing = decreasing), 
+            ]
+    if (head) 
+        out <- head(out, n)
+    jsonlite::toJSON(out)
+}
+
+.deleteVariable <- function(x) {
+    remove(list=c(x), envir=.GlobalEnv)
+}
+    `;
+    
     static scripts: { [index: string]: Languages.LanguageModel } = {
         "python3": {
             initScript: Languages.py_script,
             queryCommand: "_jupyterlab_variableinspector_dict_list()",
-            matrixQueryCommand: "_jupyterlab_variableinspector_getmatrixcontent"
+            matrixQueryCommand: "_jupyterlab_variableinspector_getmatrixcontent",
+            deleteCommand: "_jupyterlab_variableinspector_deletevariable"
         },
         "python2": {
             initScript: Languages.py_script,
             queryCommand: "_jupyterlab_variableinspector_dict_list()",
-            matrixQueryCommand: "_jupyterlab_variableinspector_getmatrixcontent"
+            matrixQueryCommand: "_jupyterlab_variableinspector_getmatrixcontent",
+            deleteCommand: "_jupyterlab_variableinspector_deletevariable"
         },
         "python": {
             initScript: Languages.py_script,
             queryCommand: "_jupyterlab_variableinspector_dict_list()",
-            matrixQueryCommand: "_jupyterlab_variableinspector_getmatrixcontent"
+            matrixQueryCommand: "_jupyterlab_variableinspector_getmatrixcontent",
+            deleteCommand: "_jupyterlab_variableinspector_deletevariable"
+        },
+        "R": {
+            initScript: Languages.r_script,
+            queryCommand: ".ls.objects()",
+            matrixQueryCommand: ".ls.objects",
+            deleteCommand: ".deleteVariable"
         }
     };
 
@@ -239,3 +328,6 @@ def _jupyterlab_variableinspector_default(o):
     }
 
 }
+
+
+
